@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2013, the IEP development team
+# Copyright (C) 2014, David Salter
 #
-# IEP is distributed under the terms of the (new) BSD License.
-# The full license can be found in 'license.txt'.
+# This is distributed under the terms of The MIT License.
+# The full license can be found in 'LICENSE'.
 
 import os
-import time
 import webbrowser
-import urllib.request, urllib.parse
-from pyzolib.qt import QtCore, QtGui
+from pyzolib.qt import QtCore, QtGui, QtWebKit
 
 import iep
 import markdown
@@ -17,34 +15,13 @@ tool_name = "Markdown Viewer"
 tool_summary = "A live preview of your Markdown in IEP."
 
 markdown_extensions = [ 'extra',
-                        'nl2br', 
                         'codehilite', 
                         'sane_lists',
                         'linkify']
 accepted_fileext =  [ '.md',
                       '.markdown',
                       '.txt']
-
-class MarkdownView(QtGui.QTextBrowser):
-    """ Inherit the webview class to implement zooming using
-    the mouse wheel. 
-    """
-    
-    loadStarted = QtCore.Signal()
-    loadFinished = QtCore.Signal(bool)
-    
-    def __init__(self, parent):
-        QtGui.QTextBrowser.__init__(self, parent)
-        
-        # Get markdown parser
-        self._md = markdown.Markdown(markdown_extensions)
-        
-        self.setOpenExternalLinks(True)
-        
-    def setHtmlWithMarkdown(self, text):
-        html = self._md.convert(text)
-        self.setHtml(html)
-
+css_link = '<link rel="stylesheet" type="text/css" href="{0}">'
 
 class IepMarkdownViewer(QtGui.QFrame):
     """ The main window, containing browser widget.
@@ -61,7 +38,15 @@ class IepMarkdownViewer(QtGui.QFrame):
         style = QtGui.QApplication.style()
         
         # Create web view
-        self._view = MarkdownView(self)
+        self._view = QtWebKit.QWebView()
+        self._cssurl = QtCore.QUrl.fromLocalFile(os.path.abspath(os.path.dirname(__file__)) + os.sep + "github.css")
+#         self._view.settings().setUserStyleSheetUrl(self._cssurl)
+#         print(self._view.settings().userStyleSheetUrl())
+        
+        self._view.page().setLinkDelegationPolicy(QtWebKit.QWebPage.DelegateAllLinks)
+        
+        # Create Markdown parser
+        self._md = markdown.Markdown(markdown_extensions)
         
         # Layout
         self._sizer1 = QtGui.QVBoxLayout(self)
@@ -76,6 +61,7 @@ class IepMarkdownViewer(QtGui.QFrame):
         # Bind to events
         iep.editors.currentChanged.connect(self.onEditorsCurrentChanged)
         iep.editors.parserDone.connect(self.getEditorContent)
+        self._view.page().linkClicked.connect(self.onLinkClicked)
         
         # Start
         self.getEditorContent()
@@ -94,7 +80,13 @@ class IepMarkdownViewer(QtGui.QFrame):
             return
         
         if os.path.splitext(editor.filename)[1] in accepted_fileext:
-            self._view.setHtmlWithMarkdown(editor.toPlainText())
+            text = editor.toPlainText()
+            html = self._md.convert(text)    
+            html = css_link.format(self._cssurl.toString()) + html
+            self._view.setHtml(html)
         else:
-            self._view.setText('')
+            self._view.setHtml('')
+
+    def onLinkClicked(self, url):
+        webbrowser.open(url.toString())
             
