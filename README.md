@@ -1,7 +1,7 @@
-iepMarkdownViewer
+iepMarkdownViewer (beta)
 =================
 
-An IEP Tool that gives a live preview of Markdown text in the editor
+An IEP Tool that gives a live preview of Markdown text in the editor.
 
 ### To Install
 - Install [Pyzo](http://www.pyzo.org) or [IEP](http://www.iep-project.org/)
