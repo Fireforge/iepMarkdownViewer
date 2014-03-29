@@ -62,9 +62,6 @@ class IepMarkdownViewer(QtGui.QFrame):
         toolId = self.__class__.__name__.lower()
         self._config = iep.config.tools[toolId]
 
-        # Get style object (for icons)
-        style = QtGui.QApplication.style()
-
         # Create web view
         if imported_qtwebkit:
             self._view = QtWebKit.QWebView()
@@ -73,7 +70,7 @@ class IepMarkdownViewer(QtGui.QFrame):
             page.linkClicked.connect(self.onLinkClicked)
 
             filedir = os.path.abspath(os.path.dirname(__file__))
-            cssurl = filepath + os.sep + "github.css"
+            cssurl = filedir + os.sep + "github.css"
             self._cssurl = QtCore.QUrl.fromLocalFile(cssurl)
         else:
             self._view = WebView(self)
