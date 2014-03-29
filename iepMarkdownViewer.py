@@ -6,11 +6,18 @@
 
 import os
 import webbrowser
-from pyzolib.qt import QtCore, QtGui, QtWebKit
+from pyzolib.qt import QtCore, QtGui
+imported_qtwebkit = True
+try:
+    from pyzolib.qt import QtWebKit
+except:
+    imported_qtwebkit = False
 
 import iep
 import markdown
 from mdx_linkify.mdx_linkify import LinkifyExtension
+
+import source.iep.tools.iepWebBrowser as iepwebbrowser
 
 tool_name = "Markdown Viewer"
 tool_summary = "A live preview of your Markdown in IEP."
@@ -57,7 +64,10 @@ class IepMarkdownViewer(QtGui.QFrame):
         style = QtGui.QApplication.style()
         
         # Create web view
-        self._view = QtWebKit.QWebView()
+        if imported_qtwebkit
+            self._view = QtWebKit.QWebView()
+        else
+            self._view = iepwebbrowser.WebView()
         self._cssurl = QtCore.QUrl.fromLocalFile(os.path.abspath(os.path.dirname(__file__)) + os.sep + "github.css")
 #         self._view.settings().setUserStyleSheetUrl(self._cssurl)
 #         print(self._view.settings().userStyleSheetUrl())
