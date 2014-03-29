@@ -10,14 +10,14 @@ from pyzolib.qt import QtCore, QtGui
 imported_qtwebkit = True
 try:
     from pyzolib.qt import QtWebKit
-except:
+except ImportError:
     imported_qtwebkit = False
 
-import iep
 import markdown
 from mdx_linkify.mdx_linkify import LinkifyExtension
 
-import source.iep.tools.iepWebBrowser as iepwebbrowser
+import iep
+from iep.tools.iepWebBrowser import WebView
 
 tool_name = "Markdown Viewer"
 tool_summary = "A live preview of your Markdown in IEP."
@@ -64,15 +64,24 @@ class IepMarkdownViewer(QtGui.QFrame):
         style = QtGui.QApplication.style()
         
         # Create web view
-        if imported_qtwebkit
+        if imported_qtwebkit:
             self._view = QtWebKit.QWebView()
-        else
-            self._view = iepwebbrowser.WebView()
-        self._cssurl = QtCore.QUrl.fromLocalFile(os.path.abspath(os.path.dirname(__file__)) + os.sep + "github.css")
+            self._view.page().setLinkDelegationPolicy(QtWebKit.QWebPage.DelegateAllLinks)
+            self._view.page().linkClicked.connect(self.onLinkClicked)
+            
+            cssurl = os.path.abspath(os.path.dirname(__file__)) + os.sep + "github.css"
+            self._cssurl = QtCore.QUrl.fromLocalFile(cssurl)
+        else:
+            self._view = WebView(self)
+            self._view.setOpenExternalLinks(True)
+            self._cssurl = None
 #         self._view.settings().setUserStyleSheetUrl(self._cssurl)
 #         print(self._view.settings().userStyleSheetUrl())
         
-        self._view.page().setLinkDelegationPolicy(QtWebKit.QWebPage.DelegateAllLinks)
+        # Bind to events
+        iep.editors.currentChanged.connect(self.onEditorsCurrentChanged)
+        iep.editors.parserDone.connect(self.getEditorContent)
+        
         
         # Create Markdown parser
         self._md = markdown.Markdown(extensions=markdown_extensions)
@@ -86,11 +95,6 @@ class IepMarkdownViewer(QtGui.QFrame):
         #
         self._sizer1.setSpacing(2)
         self.setLayout(self._sizer1)
-        
-        # Bind to events
-        iep.editors.currentChanged.connect(self.onEditorsCurrentChanged)
-        iep.editors.parserDone.connect(self.getEditorContent)
-        self._view.page().linkClicked.connect(self.onLinkClicked)
         
         # Start
         self.getEditorContent()
@@ -110,8 +114,9 @@ class IepMarkdownViewer(QtGui.QFrame):
         
         if os.path.splitext(editor.filename)[1] in accepted_fileext:
             text = editor.toPlainText()
-            html = self._md.convert(text)    
-            html = css_link.format(self._cssurl.toString()) + html
+            html = self._md.convert(text)
+            if self._cssurl:
+                html = css_link.format(self._cssurl.toString()) + html
             self._view.setHtml(html)
         else:
             self._view.setHtml('')
