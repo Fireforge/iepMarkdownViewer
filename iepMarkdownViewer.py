@@ -80,6 +80,7 @@ class IepMarkdownViewer(QtGui.QFrame):
 #         print(self._view.settings().userStyleSheetUrl())
 
         # Bind to events
+        self._view.setContextMenuPolicy(QtCore.Qt.NoContextMenu)
         iep.editors.currentChanged.connect(self.onEditorsCurrentChanged)
         iep.editors.parserDone.connect(self.getEditorContent)
 
