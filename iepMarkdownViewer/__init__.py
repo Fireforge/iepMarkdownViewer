@@ -5,19 +5,22 @@
 # The full license can be found in 'LICENSE'.
 
 import os
+import sys
 import webbrowser
+
 from pyzolib.qt import QtCore, QtGui
 imported_qtwebkit = True
 try:
     from pyzolib.qt import QtWebKit
 except ImportError:
     imported_qtwebkit = False
-
-import markdown
-from mdx_linkify.mdx_linkify import LinkifyExtension
-
 import iep
 from iep.tools.iepWebBrowser import WebView
+
+# Add the directory of this file so we can access the rest of the package
+filedir = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(filedir)
+import markdownparser
 
 tool_name = "Markdown Viewer"
 tool_summary = "A live preview of your Markdown in IEP."
@@ -26,29 +29,6 @@ accepted_fileext = ['.md',
                     '.markdown',
                     '.txt']
 css_link = '<link rel="stylesheet" type="text/css" href="{0}">'
-
-
-def dont_linkify_python(attrs, new=False):
-    if not new:  # This is an existing <a> tag, leave it be.
-        return attrs
-
-    # If the TLD is '.py', make sure it starts with http: or https:
-    text = attrs['_text']
-    if text.endswith('.py') and \
-       not text.startswith(('www.', 'http:', 'https:')):
-        # This looks like a Python file, not a URL. Don't make a link.
-        return None
-
-    # Everything checks out, keep going to the next callback.
-    return attrs
-linkify_configs = {
-    'linkifycallbacks': [[dont_linkify_python], '']
-}
-linkify = LinkifyExtension(configs=linkify_configs)
-markdown_extensions = ['extra',
-                       'codehilite',
-                       'sane_lists',
-                       linkify]
 
 
 class IepMarkdownViewer(QtGui.QFrame):
@@ -69,7 +49,6 @@ class IepMarkdownViewer(QtGui.QFrame):
             page.setLinkDelegationPolicy(QtWebKit.QWebPage.DelegateAllLinks)
             page.linkClicked.connect(self.onLinkClicked)
 
-            filedir = os.path.abspath(os.path.dirname(__file__))
             cssurl = filedir + os.sep + "github.css"
             self._cssurl = QtCore.QUrl.fromLocalFile(cssurl)
         else:
@@ -84,8 +63,8 @@ class IepMarkdownViewer(QtGui.QFrame):
         iep.editors.currentChanged.connect(self.onEditorsCurrentChanged)
         iep.editors.parserDone.connect(self.getEditorContent)
 
-        # Create Markdown parser
-        self._md = markdown.Markdown(extensions=markdown_extensions)
+        # Get the Markdown parser
+        self._md = markdownparser.getparser()
 
         # Layout
         self._sizer1 = QtGui.QVBoxLayout(self)
